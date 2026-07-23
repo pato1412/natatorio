@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --swim-bg: #071c2c;
+  --swim-panel: #0e2a3f;
+  --swim-panel-alt: #123449;
+  --swim-cyan: #2fd3d8;
+  --swim-gold: #f2b705;
+  --swim-coral: #ff5a5f;
+  --swim-muted: #7fa8b8;
+  --swim-border: #1d3f55;
+}
+
+body {
+  background-color: var(--swim-bg);
+  color: #e8f4f6;
+  font-family: "Manrope", sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+.swim-card {
+  background-color: var(--swim-panel);
+  border: 1px solid var(--swim-border);
+  border-radius: 1rem;
+}
+
+.swim-card .form-control,
+.swim-card .form-select {
+  background-color: var(--swim-panel-alt);
+  border-color: var(--swim-border);
+  color: #e8f4f6;
+}
+.swim-card .form-control:focus,
+.swim-card .form-select:focus {
+  background-color: var(--swim-panel-alt);
+  color: #e8f4f6;
+  border-color: var(--swim-cyan);
+  box-shadow: 0 0 0 0.25rem rgba(47, 211, 216, 0.25);
+}
+.swim-card .form-control::placeholder {
+  color: var(--swim-muted);
+}
+.swim-card .form-control:disabled {
+  background-color: var(--swim-panel-alt);
+  color: var(--swim-muted);
+  opacity: 0.7;
+}
+
+.swim-timer {
+  background: linear-gradient(180deg, var(--swim-panel-alt), var(--swim-bg));
+  border: 1px solid var(--swim-border);
+  border-radius: 1.25rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.swim-timer.running {
+  border-color: var(--swim-cyan);
+  box-shadow: 0 0 28px rgba(47, 211, 216, 0.35);
+}
+
+.swim-timer-value {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  font-size: clamp(2.4rem, 8vw, 4.5rem);
+  line-height: 1;
+}
+
+.btn-swim-cyan {
+  background-color: var(--swim-cyan);
+  border-color: var(--swim-cyan);
+  color: #071c2c;
+  font-weight: 700;
+}
+.btn-swim-cyan:hover,
+.btn-swim-cyan:focus,
+.btn-swim-cyan:active {
+  background-color: #26bfc4 !important;
+  border-color: #26bfc4 !important;
+  color: #071c2c !important;
+}
+.btn-swim-cyan:disabled {
+  background-color: var(--swim-cyan);
+  border-color: var(--swim-cyan);
+  opacity: 0.45;
+}
+
+.btn-swim-gold {
+  background-color: var(--swim-gold);
+  border-color: var(--swim-gold);
+  color: #071c2c;
+  font-weight: 700;
+}
+.btn-swim-gold:hover,
+.btn-swim-gold:focus,
+.btn-swim-gold:active {
+  background-color: #d9a500 !important;
+  border-color: #d9a500 !important;
+  color: #071c2c !important;
+}
+.btn-swim-gold:disabled {
+  background-color: var(--swim-gold);
+  border-color: var(--swim-gold);
+  opacity: 0.45;
+}
+
+.btn-swim-outline {
+  background-color: transparent;
+  border-color: var(--swim-border);
+  color: #e8f4f6;
+  font-weight: 600;
+}
+.btn-swim-outline:hover,
+.btn-swim-outline:focus {
+  background-color: var(--swim-panel-alt) !important;
+  border-color: var(--swim-cyan) !important;
+  color: #e8f4f6 !important;
+}
+
+.swim-record-card {
+  background: linear-gradient(160deg, var(--swim-panel-alt), var(--swim-panel));
+  border: 1px solid rgba(242, 183, 5, 0.35);
+  border-radius: 1rem;
+  height: 100%;
+}
+
+.text-swim-muted { color: var(--swim-muted) !important; }
+.text-swim-cyan { color: var(--swim-cyan) !important; }
+.text-swim-gold { color: var(--swim-gold) !important; }
+
+.swim-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+}
+
+.swim-lane-divider {
+  height: 4px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--swim-cyan) 0px,
+    var(--swim-cyan) 20px,
+    var(--swim-coral) 20px,
+    var(--swim-coral) 40px
+  );
+  opacity: 0.5;
+}
+
+.swim-table {
+  --bs-table-bg: var(--swim-panel-alt);
+  --bs-table-color: #e8f4f6;
+  --bs-table-border-color: var(--swim-border);
+}
+
+.swim-chip-group .btn {
+  border-radius: 999px !important;
+}
+
+/* --- Ajustes mobile-first --- */
+
+/* Evita el zoom automático de iOS al enfocar inputs/selects (deben ser >=16px) */
+.swim-card .form-control,
+.swim-card .form-select {
+  font-size: 16px;
+}
+
+/* Espacio seguro al final para el home indicator / navegación gestual */
+.swim-safe-bottom {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+/* Botones de estilo/distancia con mejor objetivo táctil en mobile */
+.swim-tap-chip {
+  min-height: 44px;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  font-size: 0.9rem;
+}
+
+/* En pantallas muy angostas, que la barra superior no se apriete */
+@media (max-width: 380px) {
+  .swim-timer-value {
+    font-size: 2.1rem;
+  }
+}
