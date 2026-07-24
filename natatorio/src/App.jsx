@@ -5,8 +5,12 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import CompleteProfile from "./pages/CompleteProfile";
+import ProtectedLayout from "./layouts/ProtectedLayout";
+import RankingsGlobal from "./pages/RankingsGlobal";
+import TopMarks from "./pages/TopMarks";
 import ProfesorDashboard from "./pages/ProfesorDashboard";
 import AtletaDashboard from "./pages/AtletaDashboard";
+import EstilosAdmin from "./pages/EstilosAdmin";
 
 function LoadingScreen() {
   return (
@@ -29,16 +33,22 @@ function Gate({ children }) {
   return children;
 }
 
-function Home() {
-  const { profile } = useAuth();
-  if (profile?.role === "profesor") return <ProfesorDashboard />;
-  return <AtletaDashboard />;
-}
-
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/" replace />;
+  return children;
+}
+
+function ProfesorOnly({ children }) {
+  const { profile } = useAuth();
+  if (profile?.role !== "profesor") return <Navigate to="/" replace />;
+  return children;
+}
+
+function AtletaOnly({ children }) {
+  const { profile } = useAuth();
+  if (profile?.role !== "atleta") return <Navigate to="/" replace />;
   return children;
 }
 
@@ -50,7 +60,43 @@ export default function App() {
           <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
           <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
           <Route path="/complete-profile" element={<CompleteProfile />} />
-          <Route path="/" element={<Gate><Home /></Gate>} />
+
+          <Route
+            element={
+              <Gate>
+                <ProtectedLayout />
+              </Gate>
+            }
+          >
+            <Route path="/" element={<RankingsGlobal />} />
+            <Route path="/marcas" element={<TopMarks />} />
+            <Route
+              path="/historial"
+              element={
+                <AtletaOnly>
+                  <AtletaDashboard />
+                </AtletaOnly>
+              }
+            />
+            <Route
+              path="/registrar"
+              element={
+                <ProfesorOnly>
+                  <ProfesorDashboard />
+                </ProfesorOnly>
+              }
+            />
+            <Route
+              path="/estilos"
+              element={
+                <ProfesorOnly>
+                  <EstilosAdmin />
+                </ProfesorOnly>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

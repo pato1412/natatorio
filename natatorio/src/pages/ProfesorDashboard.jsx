@@ -1,19 +1,25 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   collection,
   query,
   where,
   onSnapshot,
   addDoc,
+  deleteDoc,
+  doc,
+  getDocs,
   serverTimestamp,
   orderBy,
   limit,
 } from "firebase/firestore";
-import { Container, Row, Col, Card, Form, Button, ListGroup, Badge } from "react-bootstrap";
+import { Container, Row, Col, Card, Form, Button, ListGroup, Badge, Alert } from "react-bootstrap";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import { ESTILOS, DISTANCIAS, estiloLabel, formatTime } from "../theme";
-import TopBar from "../components/TopBar";
+import { useEstilos } from "../hooks/useEstilos";
+import { DISTANCIAS, formatTime } from "../theme";
+import PageHeader from "../components/PageHeader";
+import QuickActionBar from "../components/QuickActionBar";
 
 function useStopwatch() {
   const [elapsed, setElapsed] = useState(0);
@@ -47,12 +53,14 @@ function useStopwatch() {
 
 export default function ProfesorDashboard() {
   const { user, profile } = useAuth();
+  const { estilos, loading: loadingEstilos } = useEstilos();
   const [athletes, setAthletes] = useState([]);
   const [athleteId, setAthleteId] = useState("");
-  const [estilo, setEstilo] = useState("libre");
+  const [estiloId, setEstiloId] = useState("");
   const [distancia, setDistancia] = useState(50);
   const [recent, setRecent] = useState([]);
   const [saved, setSaved] = useState(false);
+  const [recordBanner, setRecordBanner] = useState(null);
   const sw = useStopwatch();
 
   useEffect(() => {
@@ -68,6 +76,10 @@ export default function ProfesorDashboard() {
   }, [athletes]); // eslint-disable-line
 
   useEffect(() => {
+    if (!estiloId && estilos.length) setEstiloId(estilos[0].id);
+  }, [estilos]); // eslint-disable-line
+
+  useEffect(() => {
     const q = query(
       collection(db, "times"),
       where("recordedBy", "==", user.uid),
@@ -81,28 +93,92 @@ export default function ProfesorDashboard() {
   }, [user.uid]);
 
   const athlete = athletes.find((a) => a.id === athleteId);
+  const estilo = estilos.find((e) => e.id === estiloId);
 
   const handleSave = async () => {
-    if (!athleteId || sw.elapsed === 0) return;
+    if (!athleteId || !estiloId || sw.elapsed === 0) return;
+    const timeMs = Math.round(sw.elapsed);
+
+    // Busca la mejor marca previa del atleta para este estilo/distancia,
+    // para saber si el tiempo que se está por guardar es un nuevo récord.
+    let previousBestMs = null;
+    try {
+      const bestQ = query(
+        collection(db, "times"),
+        where("athleteId", "==", athleteId),
+        where("estilo", "==", estiloId),
+        where("distancia", "==", distancia),
+        orderBy("timeMs", "asc"),
+        limit(1)
+      );
+      const bestSnap = await getDocs(bestQ);
+      if (!bestSnap.empty) previousBestMs = bestSnap.docs[0].data().timeMs;
+    } catch (err) {
+      previousBestMs = null; // si falla la consulta (p. ej. falta el índice), simplemente no se marca como récord
+    }
+
+    const isNewRecord = previousBestMs !== null && timeMs < previousBestMs;
+
     await addDoc(collection(db, "times"), {
       athleteId,
-      estilo,
+      athleteName: athlete?.fullName || "",
+      estilo: estiloId,
+      estiloLabel: estilo?.label || "",
       distancia,
-      timeMs: Math.round(sw.elapsed),
+      timeMs,
       date: new Date().toISOString(),
       recordedBy: user.uid,
+      isRecord: isNewRecord,
       createdAt: serverTimestamp(),
     });
+
+    if (isNewRecord) {
+      const message = `¡Nuevo récord personal en ${estilo?.label} ${distancia} m: ${formatTime(timeMs)}!`;
+      setRecordBanner(`🏆 ${athlete?.fullName}: ${message}`);
+      try {
+        await addDoc(collection(db, "notifications"), {
+          userId: athleteId,
+          type: "record",
+          message,
+          estilo: estiloId,
+          estiloLabel: estilo?.label || "",
+          distancia,
+          timeMs,
+          read: false,
+          createdAtIso: new Date().toISOString(),
+        });
+      } catch (err) {
+        // si falla la notificación, el tiempo ya quedó guardado igual
+      }
+      setTimeout(() => setRecordBanner(null), 6000);
+    }
+
     setSaved(true);
     sw.reset();
     setTimeout(() => setSaved(false), 1800);
   };
 
+  const handleDelete = async (timeId) => {
+    if (!window.confirm("¿Eliminar este registro? Esta acción no se puede deshacer.")) return;
+    try {
+      await deleteDoc(doc(db, "times", timeId));
+    } catch (err) {
+      window.alert("No se pudo eliminar el registro.");
+    }
+  };
+
+  const canSave = !!athleteId && !!estiloId && sw.elapsed > 0 && !sw.running;
+
   return (
-    <div className="min-vh-100 swim-safe-bottom">
-      <TopBar title="Registro de tiempos" subtitle={`Hola, ${profile?.fullName || ""}`} />
-      <Container fluid="lg">
-        {/* Fila 1: selección (arriba en mobile, columna izquierda en desktop) + cronómetro (columna derecha en desktop) */}
+    <div className="min-vh-100">
+      <PageHeader title="Registro de tiempos" subtitle={`Hola, ${profile?.fullName || ""}`} />
+      {/* padding-bottom para que el contenido no quede tapado por la barra fija de abajo */}
+      <Container fluid="lg" style={{ paddingBottom: "6.5rem" }}>
+        {recordBanner && (
+          <Alert variant="warning" className="fw-bold" onClose={() => setRecordBanner(null)} dismissible>
+            {recordBanner}
+          </Alert>
+        )}
         <Row className="g-3">
           <Col xs={12} lg={7}>
             <Card className="swim-card mb-3">
@@ -121,14 +197,25 @@ export default function ProfesorDashboard() {
 
             <Card className="swim-card">
               <Card.Body>
-                <Form.Label className="small text-swim-muted text-uppercase fw-bold d-block mb-2">Estilo</Form.Label>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <Form.Label className="small text-swim-muted text-uppercase fw-bold m-0">Estilo</Form.Label>
+                  <Link to="/estilos" className="text-swim-cyan" style={{ fontSize: "0.75rem" }}>
+                    Administrar estilos
+                  </Link>
+                </div>
                 <div className="d-flex flex-wrap gap-2 mb-3">
-                  {ESTILOS.map((e) => (
+                  {loadingEstilos && <span className="small text-swim-muted">Cargando estilos…</span>}
+                  {!loadingEstilos && estilos.length === 0 && (
+                    <span className="small text-swim-muted">
+                      No hay estilos activos. <Link to="/estilos" className="text-swim-cyan">Cárgalos acá</Link>.
+                    </span>
+                  )}
+                  {estilos.map((e) => (
                     <Button
                       key={e.id}
                       className="rounded-pill swim-tap-chip"
-                      variant={estilo === e.id ? "info" : "outline-secondary"}
-                      onClick={() => setEstilo(e.id)}
+                      variant={estiloId === e.id ? "info" : "outline-secondary"}
+                      onClick={() => setEstiloId(e.id)}
                     >
                       {e.label}
                     </Button>
@@ -154,7 +241,8 @@ export default function ProfesorDashboard() {
           <Col xs={12} lg={5} className="mt-3 mt-lg-0">
             <div className={`swim-timer p-4 text-center mb-3 ${sw.running ? "running" : ""}`}>
               <div className="font-mono text-swim-muted small mb-1">
-                {athlete ? athlete.fullName.toUpperCase() : "SELECCIONA UN ATLETA"} · {estiloLabel(estilo).toUpperCase()} · {distancia} M
+                {athlete ? athlete.fullName.toUpperCase() : "SELECCIONA UN ATLETA"}
+                {estilo ? ` · ${estilo.label.toUpperCase()}` : ""} · {distancia} M
               </div>
               <div className={`swim-timer-value ${sw.running ? "text-swim-cyan" : "text-white"}`}>
                 {formatTime(sw.elapsed)}
@@ -163,48 +251,12 @@ export default function ProfesorDashboard() {
                 {sw.running ? "● EN CURSO" : sw.elapsed > 0 ? "■ DETENIDO" : "○ LISTO"}
               </Badge>
             </div>
-
-            <Row className="g-2 mb-2">
-              <Col xs={6}>
-                <div className="d-grid">
-                  <Button
-                    className={sw.running ? "" : "btn-swim-cyan"}
-                    variant={sw.running ? "danger" : undefined}
-                    size="lg"
-                    onClick={sw.running ? sw.stop : sw.start}
-                  >
-                    {sw.running ? "Detener" : "Iniciar"}
-                  </Button>
-                </div>
-              </Col>
-              <Col xs={6}>
-                <div className="d-grid">
-                  <Button
-                    className="btn-swim-outline border"
-                    size="lg"
-                    disabled={sw.running}
-                    onClick={sw.reset}
-                  >
-                    Reiniciar
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-
-            <div className="d-grid">
-              <Button
-                className="btn-swim-gold"
-                size="lg"
-                disabled={!athleteId || sw.elapsed === 0 || sw.running}
-                onClick={handleSave}
-              >
-                {saved ? "✓ Tiempo guardado" : "Guardar tiempo"}
-              </Button>
+            <div className="small text-swim-muted text-center d-lg-none">
+              Tip: usa la barra de abajo para cronometrar sin perder de vista la pantalla.
             </div>
           </Col>
         </Row>
 
-        {/* Fila 2: historial reciente, siempre debajo, en mobile y en desktop */}
         <Row className="g-3 mt-1">
           <Col xs={12}>
             <Card className="swim-card">
@@ -221,16 +273,28 @@ export default function ProfesorDashboard() {
                       return (
                         <ListGroup.Item
                           key={t.id}
-                          className="d-flex justify-content-between align-items-center px-0"
+                          className="d-flex justify-content-between align-items-center px-0 gap-2"
                           style={{ background: "transparent", borderColor: "var(--swim-border)" }}
                         >
-                          <div className="small">
-                            <span className="fw-semibold">{a?.fullName || "—"}</span>{" "}
+                          <div className="small" style={{ minWidth: 0 }}>
+                            <span className="fw-semibold">{a?.fullName || t.athleteName || "—"}</span>{" "}
                             <span className="text-swim-muted">
-                              · {estiloLabel(t.estilo)} · {t.distancia} m
+                              · {t.estiloLabel || "—"} · {t.distancia} m
                             </span>
+                            {t.isRecord && <span className="ms-1">🏆</span>}
                           </div>
-                          <span className="font-mono text-swim-cyan">{formatTime(t.timeMs)}</span>
+                          <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                            <span className="font-mono text-swim-cyan">{formatTime(t.timeMs)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline-danger"
+                              onClick={() => handleDelete(t.id)}
+                              aria-label="Eliminar registro"
+                              title="Eliminar"
+                            >
+                              🗑
+                            </Button>
+                          </div>
                         </ListGroup.Item>
                       );
                     })}
@@ -241,6 +305,18 @@ export default function ProfesorDashboard() {
           </Col>
         </Row>
       </Container>
+
+      <QuickActionBar
+        elapsed={sw.elapsed}
+        running={sw.running}
+        onStart={sw.start}
+        onStop={sw.stop}
+        onReset={sw.reset}
+        onSave={handleSave}
+        canSave={canSave}
+        saved={saved}
+        athleteName={athlete?.fullName}
+      />
     </div>
   );
 }

@@ -1,16 +1,7 @@
-export const ESTILOS = [
-  { id: "libre", label: "Libre" },
-  { id: "espalda", label: "Espalda" },
-  { id: "pecho", label: "Pecho" },
-  { id: "mariposa", label: "Mariposa" },
-  { id: "combinado", label: "Combinado" },
-];
+// Los estilos de nado ya NO viven acá: son administrables desde Firestore
+// (colección "estilos"), ver src/hooks/useEstilos.js y src/pages/EstilosAdmin.jsx.
 
 export const DISTANCIAS = [50, 100, 200, 400];
-
-export function estiloLabel(id) {
-  return ESTILOS.find((e) => e.id === id)?.label || id;
-}
 
 export function formatTime(ms) {
   const totalCs = Math.floor(ms / 10);

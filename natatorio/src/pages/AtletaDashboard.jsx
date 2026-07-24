@@ -3,11 +3,11 @@ import { collection, query, where, onSnapshot, orderBy } from "firebase/firestor
 import { Container, Row, Col, Card, Table } from "react-bootstrap";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
-import { estiloLabel, formatTime, formatDate } from "../theme";
-import TopBar from "../components/TopBar";
+import { formatTime, formatDate } from "../theme";
+import PageHeader from "../components/PageHeader";
 
 export default function AtletaDashboard() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [times, setTimes] = useState([]);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function AtletaDashboard() {
 
   return (
     <div className="min-vh-100 swim-safe-bottom">
-      <TopBar title="Mi rendimiento" subtitle={`Hola, ${profile?.fullName || ""}`} />
+      <PageHeader title="Mi historial" subtitle="Tu mejor marca y el historial completo por estilo" />
       <Container fluid="lg">
         <div className="small text-swim-muted text-uppercase fw-bold mb-2">Mejores tiempos</div>
 
@@ -54,7 +54,7 @@ export default function AtletaDashboard() {
                       RÉCORD
                     </div>
                     <div className="fw-bold mt-1" style={{ fontSize: "0.8rem" }}>
-                      {estiloLabel(t.estilo)} · {t.distancia} m
+                      {t.estiloLabel || t.estilo} · {t.distancia} m
                     </div>
                     <div
                       className="font-mono fw-bold text-swim-gold mt-1"
@@ -91,7 +91,7 @@ export default function AtletaDashboard() {
                   <tbody>
                     {times.map((t) => (
                       <tr key={t.id}>
-                        <td>{estiloLabel(t.estilo)}</td>
+                        <td>{t.estiloLabel || t.estilo}{t.isRecord && <span className="ms-1">🏆</span>}</td>
                         <td className="text-swim-muted">{t.distancia} m</td>
                         <td className="font-mono text-swim-cyan">{formatTime(t.timeMs)}</td>
                         <td className="text-swim-muted">{formatDate(t.date)}</td>

@@ -1,28 +1,35 @@
 # Carril de Tiempos — App de cronometraje de natación
 
 App con registro/login (Google, Facebook o formulario propio), perfiles de
-Profesor y Atleta, cronómetro por estilo/distancia, y panel de mejores
-tiempos + historial para cada atleta. Usa Firebase Authentication y
-Firestore como base de datos, y **React-Bootstrap** para la interfaz.
+Profesor y Atleta, cronómetro por estilo/distancia, rankings, mejores marcas
+e historial. Usa Firebase Authentication y Firestore, y **React-Bootstrap**
+para la interfaz (pensada mobile-first).
 
-## Sobre el diseño responsivo
+## Secciones de la app
 
-Toda la interfaz usa componentes de [React-Bootstrap](https://react-bootstrap.github.io/)
-(`Container`, `Row`/`Col`, `Card`, `Form`, `Navbar`, `Table`), que ya traen
-el sistema de grillas y los *breakpoints* de Bootstrap 5 (`xs`, `sm`, `md`,
-`lg`, `xl`). Esto asegura que:
+Menú de navegación (arriba, colapsable en mobile):
 
-- Los formularios de login/registro se centran y se angostan en pantallas
-  chicas (celular) y se ven en columnas más anchas en escritorio.
-- Las tarjetas de "mejores tiempos" se acomodan solas: 1 columna en celular,
-  2 en tablet, hasta 4 en escritorio (`xs=12 sm=6 md=4 lg=3`).
-- La tabla de historial usa `table-responsive`, así que en pantallas
-  angostas se puede desplazar horizontalmente en vez de romperse.
-- El `Navbar` colapsa correctamente en móvil.
+- **Inicio** (`/`) — Top 10 de cada estilo, entre TODOS los participantes.
+  Es la página de inicio para ambos roles.
+- **Marcas** (`/marcas`) — Top 10 de cada estilo:
+  - Atleta: sus propias 10 mejores marcas por estilo.
+  - Profesor: elige un atleta y ve sus 10 mejores marcas por estilo.
+- **Registrar tiempos** (`/registrar`, solo profesor) — formulario +
+  cronómetro, con una barra de acción fija abajo (Iniciar/Detener/Guardar)
+  para cronometrar rápido sin perder de vista la pantalla. Desde "Últimos
+  registros" se puede eliminar un tiempo cargado por error (🗑). Si el
+  tiempo guardado supera la mejor marca previa del atleta en ese
+  estilo/distancia, se marca como récord (🏆), se muestra un aviso
+  destacado al profesor, y se genera una notificación in-app para el
+  atleta.
+- **Mi historial** (`/historial`, solo atleta) — mejor marca por estilo y el
+  historial completo de tiempos.
+- **Administrar estilos** (`/estilos`, solo profesor) — alta/baja de los
+  estilos de nado disponibles en el formulario (ver más abajo).
 
-La identidad visual (colores, tipografías, el cronómetro estilo panel
-táctil) se agregó encima de Bootstrap mediante `src/custom.css`, sin tocar
-el comportamiento responsivo que Bootstrap ya resuelve.
+Los atletas ven una campana 🔔 en el menú con las notificaciones de récord
+personal. Es una notificación **dentro de la app** (no un push del sistema
+operativo); para eso haría falta sumar Firebase Cloud Messaging.
 
 ## 1. Crear el proyecto en Firebase
 
@@ -46,37 +53,33 @@ cp .env.example .env
 
 Pega las credenciales de Firebase en `.env`.
 
-## 3. Reglas de Firestore
+## 3. Reglas de Firestore e índices
 
-En **Firestore > Reglas**, usa algo como esto para empezar (ajusta según tus
-necesidades de seguridad antes de producción):
+El proyecto incluye `firestore.rules` y `firestore.indexes.json` listos
+para desplegar con Firebase CLI:
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /times/{timeId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.recordedBy == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.recordedBy == request.auth.uid;
-    }
-  }
-}
+```bash
+npm install -g firebase-tools
+firebase login
+firebase use --add          # selecciona tu proyecto
+firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-Esto permite que cualquier usuario autenticado (profesor o atleta) lea la
-lista de atletas y los tiempos, pero solo el profesor que registró un tiempo
-puede editarlo o borrarlo. Ajusta esto si quieres reglas más estrictas
-(por ejemplo, restringir la lectura de `users` solo a profesores).
+Si preferís no usar la CLI, podés copiar el contenido de `firestore.rules`
+directamente en **Firestore > Reglas** desde la consola. Los índices
+también se pueden crear a mano desde **Firestore > Índices**, o dejar que
+Firestore te los proponga: la primera vez que corras una consulta que los
+necesite, va a tirar un error en la consola del navegador con un link
+directo para crear ese índice con un clic.
+
+Los índices compuestos que usa la app son:
+
+- `times`: `recordedBy` + `date` (historial reciente del profesor)
+- `times`: `athleteId` + `date` (historial del atleta)
+- `times`: `estilo` + `distancia` + `timeMs` (ranking global)
+- `times`: `athleteId` + `estilo` + `distancia` + `timeMs` (marcas por atleta)
+- `estilos`: `active` + `order` (lista de estilos activos, ordenada)
+- `notifications`: `userId` + `createdAtIso` (campana de notificaciones del atleta)
 
 ## 4. Ejecutar en desarrollo
 
@@ -104,18 +107,52 @@ defecto, y deberás agregar tu dominio de producción cuando despliegues).
 }
 ```
 
+**Colección `estilos`** (administrable desde la app, por un profesor):
+```
+{
+  label: string,     // ej. "Libre"
+  order: number,     // define el orden en que aparecen
+  active: boolean    // los inactivos no aparecen como opción al registrar tiempos
+}
+```
+
 **Colección `times`**:
 ```
 {
-  athleteId: string,   // uid del atleta
-  estilo: "libre" | "espalda" | "pecho" | "mariposa" | "combinado",
-  distancia: number,   // 50, 100, 200, 400
+  athleteId: string,     // uid del atleta
+  athleteName: string,   // copia del nombre al momento de guardar
+  estilo: string,        // id del documento en "estilos"
+  estiloLabel: string,   // copia del nombre del estilo al momento de guardar
+  distancia: number,     // 50, 100, 200, 400
   timeMs: number,
   date: string (ISO),
-  recordedBy: string,  // uid del profesor
+  recordedBy: string,    // uid del profesor
+  isRecord: boolean,     // true si fue un nuevo récord personal al guardarlo
   createdAt: timestamp
 }
 ```
+
+**Colección `notifications`**:
+```
+{
+  userId: string,         // uid del atleta que recibe la notificación
+  type: "record",
+  message: string,
+  estilo: string,
+  estiloLabel: string,
+  distancia: number,
+  timeMs: number,
+  read: boolean,
+  createdAtIso: string (ISO)
+}
+```
+
+Solo un profesor puede crear notificaciones (ver `firestore.rules`); cada
+atleta solo puede leer y marcar como leídas las suyas.
+
+`athleteName` y `estiloLabel` quedan "congelados" en cada registro para que
+el historial y los rankings sigan siendo correctos aunque después se
+renombre, desactive o elimine un estilo, o cambie el nombre de un atleta.
 
 ## Nota sobre Instagram
 

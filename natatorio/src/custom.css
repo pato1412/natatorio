@@ -185,3 +185,16 @@ body {
     font-size: 2.1rem;
   }
 }
+
+/* --- Menú de navegación --- */
+.swim-navbar .nav-link {
+  color: var(--swim-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.swim-navbar .nav-link.active {
+  color: var(--swim-cyan) !important;
+}
+.swim-navbar .nav-link:hover {
+  color: #e8f4f6;
+}
