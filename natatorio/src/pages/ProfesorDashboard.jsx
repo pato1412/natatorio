@@ -17,7 +17,8 @@ import { Container, Row, Col, Card, Form, Button, ListGroup, Badge, Alert } from
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useEstilos } from "../hooks/useEstilos";
-import { DISTANCIAS, formatTime } from "../theme";
+import { useDistancias } from "../hooks/useDistancias";
+import { formatTime } from "../theme";
 import PageHeader from "../components/PageHeader";
 import QuickActionBar from "../components/QuickActionBar";
 
@@ -54,10 +55,11 @@ function useStopwatch() {
 export default function ProfesorDashboard() {
   const { user, profile } = useAuth();
   const { estilos, loading: loadingEstilos } = useEstilos();
+  const { distancias, loading: loadingDistancias } = useDistancias();
   const [athletes, setAthletes] = useState([]);
   const [athleteId, setAthleteId] = useState("");
   const [estiloId, setEstiloId] = useState("");
-  const [distancia, setDistancia] = useState(50);
+  const [distancia, setDistancia] = useState(null);
   const [recent, setRecent] = useState([]);
   const [saved, setSaved] = useState(false);
   const [recordBanner, setRecordBanner] = useState(null);
@@ -80,6 +82,10 @@ export default function ProfesorDashboard() {
   }, [estilos]); // eslint-disable-line
 
   useEffect(() => {
+    if (distancia === null && distancias.length) setDistancia(distancias[0].value);
+  }, [distancias]); // eslint-disable-line
+
+  useEffect(() => {
     const q = query(
       collection(db, "times"),
       where("recordedBy", "==", user.uid),
@@ -96,7 +102,7 @@ export default function ProfesorDashboard() {
   const estilo = estilos.find((e) => e.id === estiloId);
 
   const handleSave = async () => {
-    if (!athleteId || !estiloId || sw.elapsed === 0) return;
+    if (!athleteId || !estiloId || !distancia || sw.elapsed === 0) return;
     const timeMs = Math.round(sw.elapsed);
 
     // Busca la mejor marca previa del atleta para este estilo/distancia,
@@ -167,7 +173,7 @@ export default function ProfesorDashboard() {
     }
   };
 
-  const canSave = !!athleteId && !!estiloId && sw.elapsed > 0 && !sw.running;
+  const canSave = !!athleteId && !!estiloId && !!distancia && sw.elapsed > 0 && !sw.running;
 
   return (
     <div className="min-vh-100">
@@ -199,15 +205,15 @@ export default function ProfesorDashboard() {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <Form.Label className="small text-swim-muted text-uppercase fw-bold m-0">Estilo</Form.Label>
-                  <Link to="/estilos" className="text-swim-cyan" style={{ fontSize: "0.75rem" }}>
-                    Administrar estilos
+                  <Link to="/configuracion" className="text-swim-cyan" style={{ fontSize: "0.75rem" }}>
+                    Configuración
                   </Link>
                 </div>
                 <div className="d-flex flex-wrap gap-2 mb-3">
                   {loadingEstilos && <span className="small text-swim-muted">Cargando estilos…</span>}
                   {!loadingEstilos && estilos.length === 0 && (
                     <span className="small text-swim-muted">
-                      No hay estilos activos. <Link to="/estilos" className="text-swim-cyan">Cárgalos acá</Link>.
+                      No hay estilos activos. <Link to="/configuracion" className="text-swim-cyan">Cárgalos acá</Link>.
                     </span>
                   )}
                   {estilos.map((e) => (
@@ -223,14 +229,20 @@ export default function ProfesorDashboard() {
                 </div>
                 <Form.Label className="small text-swim-muted text-uppercase fw-bold d-block mb-2">Distancia</Form.Label>
                 <div className="d-flex flex-wrap gap-2">
-                  {DISTANCIAS.map((d) => (
+                  {loadingDistancias && <span className="small text-swim-muted">Cargando distancias…</span>}
+                  {!loadingDistancias && distancias.length === 0 && (
+                    <span className="small text-swim-muted">
+                      No hay distancias activas. <Link to="/configuracion" className="text-swim-cyan">Cárgalas acá</Link>.
+                    </span>
+                  )}
+                  {distancias.map((d) => (
                     <Button
-                      key={d}
+                      key={d.id}
                       className="rounded-pill swim-tap-chip"
-                      variant={distancia === d ? "warning" : "outline-secondary"}
-                      onClick={() => setDistancia(d)}
+                      variant={distancia === d.value ? "warning" : "outline-secondary"}
+                      onClick={() => setDistancia(d.value)}
                     >
-                      {d} m
+                      {d.value} m
                     </Button>
                   ))}
                 </div>
@@ -242,7 +254,7 @@ export default function ProfesorDashboard() {
             <div className={`swim-timer p-4 text-center mb-3 ${sw.running ? "running" : ""}`}>
               <div className="font-mono text-swim-muted small mb-1">
                 {athlete ? athlete.fullName.toUpperCase() : "SELECCIONA UN ATLETA"}
-                {estilo ? ` · ${estilo.label.toUpperCase()}` : ""} · {distancia} M
+                {estilo ? ` · ${estilo.label.toUpperCase()}` : ""}{distancia ? ` · ${distancia} M` : ""}
               </div>
               <div className={`swim-timer-value ${sw.running ? "text-swim-cyan" : "text-white"}`}>
                 {formatTime(sw.elapsed)}

@@ -10,7 +10,7 @@ import RankingsGlobal from "./pages/RankingsGlobal";
 import TopMarks from "./pages/TopMarks";
 import ProfesorDashboard from "./pages/ProfesorDashboard";
 import AtletaDashboard from "./pages/AtletaDashboard";
-import EstilosAdmin from "./pages/EstilosAdmin";
+import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 
 function LoadingScreen() {
   return (
@@ -87,10 +87,10 @@ export default function App() {
               }
             />
             <Route
-              path="/estilos"
+              path="/configuracion"
               element={
                 <ProfesorOnly>
-                  <EstilosAdmin />
+                  <ConfiguracionAdmin />
                 </ProfesorOnly>
               }
             />

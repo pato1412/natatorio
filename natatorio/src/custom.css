@@ -198,3 +198,19 @@ body {
 .swim-navbar .nav-link:hover {
   color: #e8f4f6;
 }
+
+/* --- Pestañas de Configuración --- */
+.swim-tabs .nav-link {
+  color: var(--swim-muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-weight: 700;
+}
+.swim-tabs .nav-link.active {
+  color: var(--swim-cyan) !important;
+  background: transparent !important;
+  border-bottom: 2px solid var(--swim-cyan);
+}
+.swim-tabs .nav-link:hover {
+  border-color: var(--swim-border);
+}

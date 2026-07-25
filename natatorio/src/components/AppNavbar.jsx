@@ -35,8 +35,8 @@ export default function AppNavbar() {
               </Nav.Link>
             )}
             {isProfesor && (
-              <Nav.Link as={NavLink} to="/estilos">
-                Administrar estilos
+              <Nav.Link as={NavLink} to="/configuracion">
+                Configuración
               </Nav.Link>
             )}
           </Nav>

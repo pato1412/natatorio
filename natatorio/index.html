@@ -2,8 +2,23 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Carril de Tiempos</title>
+    <meta name="description" content="Cronometraje y seguimiento de tiempos de natación para profesores y atletas" />
+
+    <!-- PWA / theming -->
+    <meta name="theme-color" content="#071c2c" />
+    <link rel="icon" href="/icons/favicon.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/icons/favicon-16.png" type="image/png" sizes="16x16" />
+
+    <!-- iOS: Safari no instala bien solo con el manifest, necesita estas etiquetas -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Carril" />
+
+    <!-- Android / otros -->
+    <meta name="mobile-web-app-capable" content="yes" />
   </head>
   <body style="margin:0;">
     <div id="root"></div>

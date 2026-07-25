@@ -1,7 +1,7 @@
-// Los estilos de nado ya NO viven acá: son administrables desde Firestore
-// (colección "estilos"), ver src/hooks/useEstilos.js y src/pages/EstilosAdmin.jsx.
-
-export const DISTANCIAS = [50, 100, 200, 400];
+// Los estilos de nado y las distancias ya NO viven acá: son administrables
+// desde Firestore (colecciones "estilos" y "distancias"), ver
+// src/hooks/useEstilos.js, src/hooks/useDistancias.js y
+// src/pages/ConfiguracionAdmin.jsx.
 
 export function formatTime(ms) {
   const totalCs = Math.floor(ms / 10);

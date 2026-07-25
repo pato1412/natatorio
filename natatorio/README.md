@@ -24,8 +24,9 @@ Menú de navegación (arriba, colapsable en mobile):
   atleta.
 - **Mi historial** (`/historial`, solo atleta) — mejor marca por estilo y el
   historial completo de tiempos.
-- **Administrar estilos** (`/estilos`, solo profesor) — alta/baja de los
-  estilos de nado disponibles en el formulario (ver más abajo).
+- **Configuración** (`/configuracion`, solo profesor) — dos pestañas para
+  administrar sin tocar código: **Estilos** y **Distancias**, disponibles en
+  el formulario de registro de tiempos (ver más abajo).
 
 Los atletas ven una campana 🔔 en el menú con las notificaciones de récord
 personal. Es una notificación **dentro de la app** (no un push del sistema
@@ -79,6 +80,7 @@ Los índices compuestos que usa la app son:
 - `times`: `estilo` + `distancia` + `timeMs` (ranking global)
 - `times`: `athleteId` + `estilo` + `distancia` + `timeMs` (marcas por atleta)
 - `estilos`: `active` + `order` (lista de estilos activos, ordenada)
+- `distancias`: `active` + `value` (lista de distancias activas, ordenadas numéricamente)
 - `notifications`: `userId` + `createdAtIso` (campana de notificaciones del atleta)
 
 ## 4. Ejecutar en desarrollo
@@ -115,6 +117,16 @@ defecto, y deberás agregar tu dominio de producción cuando despliegues).
   active: boolean    // los inactivos no aparecen como opción al registrar tiempos
 }
 ```
+
+**Colección `distancias`** (administrable desde la app, por un profesor):
+```
+{
+  value: number,      // metros, ej. 50
+  active: boolean     // las inactivas no aparecen como opción al registrar tiempos
+}
+```
+Se ordenan siempre de menor a mayor por `value`, así que no hace falta un
+campo de orden manual como en `estilos`.
 
 **Colección `times`**:
 ```
@@ -153,6 +165,69 @@ atleta solo puede leer y marcar como leídas las suyas.
 `athleteName` y `estiloLabel` quedan "congelados" en cada registro para que
 el historial y los rankings sigan siendo correctos aunque después se
 renombre, desactive o elimine un estilo, o cambie el nombre de un atleta.
+
+## PWA — instalar en el celular
+
+La app está configurada como Progressive Web App con `vite-plugin-pwa`:
+genera el `manifest.webmanifest`, el service worker, y ya incluye los
+íconos en `public/icons/` (192, 512, versiones "maskable" para Android, y
+`apple-touch-icon` para iOS).
+
+### Probarla localmente
+
+El service worker **no se activa en modo desarrollo** (`npm run dev`).
+Para probar la instalación necesitás una build de producción:
+
+```bash
+npm run build
+npm run preview
+```
+
+Y abrir la URL que te muestre `preview` desde el celular (en la misma red)
+o desde Chrome DevTools en modo responsive.
+
+### Requisito: HTTPS
+
+Los navegadores solo permiten instalar una PWA servida por **HTTPS**
+(`localhost` es la única excepción). Cuando despliegues a producción
+(Vercel, Netlify, Firebase Hosting, etc.), el certificado HTTPS viene
+incluido por defecto en todas esas plataformas.
+
+### Cómo se instala
+
+- **Android / Chrome**: aparece un banner o el botón "Instalar app" en el
+  menú (⋮). Se agrega un ícono a la pantalla de inicio y abre en modo
+  standalone (sin la barra del navegador).
+- **iPhone / Safari**: no hay banner automático. Hay que abrir el sitio en
+  Safari → botón compartir (□↑) → **"Agregar a pantalla de inicio"**. Por
+  eso el `index.html` incluye las etiquetas `apple-touch-icon` y
+  `apple-mobile-web-app-*`, que son las que Safari usa en este flujo manual.
+
+### Actualizaciones
+
+`registerType: "autoUpdate"` hace que, cuando publiques una nueva versión,
+el service worker se actualice solo en segundo plano y se aplique la
+próxima vez que se abra la app — sin que el profesor o el atleta tengan
+que reinstalar nada.
+
+### Una limitación a tener en cuenta
+
+El service worker cachea el "app shell" (HTML/JS/CSS/íconos) para que la
+app cargue rápido y sea instalable, **no** los datos de Firestore. Si el
+celular está sin conexión, la app va a abrir (gracias al caché), pero el
+cronómetro, los rankings y el registro de tiempos van a necesitar
+conexión para leer o guardar en Firestore. Si más adelante querés que
+funcione realmente sin conexión (por ejemplo, cronometrar en una pileta
+sin señal y sincronizar después), se puede sumar la persistencia offline
+de Firestore — es un cambio aparte, avisame si te interesa.
+
+### Otra cosa a tener en cuenta: login social como app instalada
+
+Algunos navegadores restringen las ventanas emergentes (`signInWithPopup`)
+cuando la app corre en modo standalone (instalada). Si notás que
+"Continuar con Google/Facebook" no abre bien la ventana una vez instalada,
+la solución es cambiar esos dos métodos a `signInWithRedirect` en
+`AuthContext.jsx` — es un cambio chico, avisame si te pasa y lo hacemos.
 
 ## Nota sobre Instagram
 

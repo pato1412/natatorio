@@ -4,17 +4,22 @@ import { Container, Row, Col, Button, Form } from "react-bootstrap";
 import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useEstilos } from "../hooks/useEstilos";
-import { DISTANCIAS } from "../theme";
+import { useDistancias } from "../hooks/useDistancias";
 import PageHeader from "../components/PageHeader";
 import TopList from "../components/TopList";
 
 export default function TopMarks() {
   const { user, profile } = useAuth();
   const isProfesor = profile?.role === "profesor";
-  const { estilos, loading } = useEstilos();
-  const [distancia, setDistancia] = useState(50);
+  const { estilos, loading: loadingEstilos } = useEstilos();
+  const { distancias, loading: loadingDistancias } = useDistancias();
+  const [distancia, setDistancia] = useState(null);
   const [athletes, setAthletes] = useState([]);
   const [athleteId, setAthleteId] = useState("");
+
+  useEffect(() => {
+    if (distancia === null && distancias.length) setDistancia(distancias[0].value);
+  }, [distancias]); // eslint-disable-line
 
   useEffect(() => {
     if (!isProfesor) return;
@@ -55,14 +60,15 @@ export default function TopMarks() {
         )}
 
         <div className="d-flex flex-wrap gap-2 mb-4">
-          {DISTANCIAS.map((d) => (
+          {loadingDistancias && <span className="small text-swim-muted">Cargando distancias…</span>}
+          {distancias.map((d) => (
             <Button
-              key={d}
+              key={d.id}
               className="rounded-pill swim-tap-chip"
-              variant={distancia === d ? "warning" : "outline-secondary"}
-              onClick={() => setDistancia(d)}
+              variant={distancia === d.value ? "warning" : "outline-secondary"}
+              onClick={() => setDistancia(d.value)}
             >
-              {d} m
+              {d.value} m
             </Button>
           ))}
         </div>
@@ -71,14 +77,16 @@ export default function TopMarks() {
           <div className="small text-swim-muted">Selecciona un atleta para ver sus marcas.</div>
         ) : (
           <>
-            {loading && <div className="small text-swim-muted">Cargando estilos…</div>}
-            <Row className="g-3">
-              {estilos.map((e) => (
-                <Col xs={12} md={6} key={e.id}>
-                  <TopList estiloId={e.id} estiloLabel={e.label} distancia={distancia} athleteId={targetAthleteId} />
-                </Col>
-              ))}
-            </Row>
+            {loadingEstilos && <div className="small text-swim-muted">Cargando estilos…</div>}
+            {distancia && (
+              <Row className="g-3">
+                {estilos.map((e) => (
+                  <Col xs={12} md={6} key={e.id}>
+                    <TopList estiloId={e.id} estiloLabel={e.label} distancia={distancia} athleteId={targetAthleteId} />
+                  </Col>
+                ))}
+              </Row>
+            )}
           </>
         )}
       </Container>
