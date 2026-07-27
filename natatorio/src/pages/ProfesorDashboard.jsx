@@ -259,7 +259,10 @@ export default function ProfesorDashboard() {
               <div className={`swim-timer-value ${sw.running ? "text-swim-cyan" : "text-white"}`}>
                 {formatTime(sw.elapsed)}
               </div>
-              <Badge bg={sw.running ? "info" : "secondary"} className="text-dark mt-2">
+              <Badge
+                bg={sw.running ? "info" : null}
+                className={`mt-2 ${sw.running ? "text-dark" : "badge-swim-neutral"}`}
+              >
                 {sw.running ? "● EN CURSO" : sw.elapsed > 0 ? "■ DETENIDO" : "○ LISTO"}
               </Badge>
             </div>

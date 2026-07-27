@@ -29,7 +29,7 @@ export default function TopList({ estiloId, estiloLabel, distancia, athleteId, s
       <Card.Body>
         <div className="d-flex justify-content-between align-items-center mb-2">
           <div className="fw-bold">{estiloLabel}</div>
-          <Badge bg="secondary" className="font-mono">
+          <Badge bg={null} className="font-mono badge-swim-neutral">
             {distancia} m
           </Badge>
         </div>

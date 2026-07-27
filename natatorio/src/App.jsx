@@ -24,9 +24,9 @@ function LoadingScreen() {
 }
 
 function Gate({ children }) {
-  const { user, profile, loading, needsProfile } = useAuth();
+  const { user, profile, loading, needsProfile, redirectPending } = useAuth();
 
-  if (loading) return <LoadingScreen />;
+  if (loading || redirectPending) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (needsProfile) return <Navigate to="/complete-profile" replace />;
   if (!profile) return <LoadingScreen />;
@@ -34,8 +34,8 @@ function Gate({ children }) {
 }
 
 function PublicOnly({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  const { user, loading, redirectPending } = useAuth();
+  if (loading || redirectPending) return <LoadingScreen />;
   if (user) return <Navigate to="/" replace />;
   return children;
 }

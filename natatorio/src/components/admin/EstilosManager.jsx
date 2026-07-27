@@ -107,8 +107,8 @@ export default function EstilosManager() {
                   style={{ background: "transparent", borderColor: "var(--swim-border)" }}
                 >
                   <div className="d-flex align-items-center gap-2">
-                    <span className="fw-semibold" style={{ color: "#fff" }} >{e.label}</span>
-                    {!e.active && <Badge bg="secondary">Inactivo</Badge>}
+                    <span className="fw-semibold">{e.label}</span>
+                    {!e.active && <Badge bg={null} className="badge-swim-neutral">Inactivo</Badge>}
                   </div>
                   <div className="d-flex gap-2">
                     <Button size="sm" className="btn-swim-outline border" onClick={() => handleToggleActive(e)}>

@@ -4,7 +4,7 @@ import { Container, Row, Col, Card, Form, Button, Alert, Spinner, ToggleButton, 
 import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
-  const { registerWithEmail, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { registerWithEmail, loginWithGoogle, loginWithFacebook, redirectError, clearRedirectError } = useAuth();
   const navigate = useNavigate();
 
   const [role, setRole] = useState("atleta");
@@ -34,14 +34,16 @@ export default function Register() {
     }
   };
 
-  // Con Google/Facebook, el perfil (rol, edad, sexo) se completa después del login,
-  // porque estos proveedores no entregan esos datos.
+  // Con popup (navegador normal), la función devuelve el usuario ya
+  // logueado: navegamos apenas resuelve, y App.jsx lo manda a completar el
+  // perfil si todavía no existe. Con redirect (app instalada), la página
+  // se recarga sola al volver.
   const handleSocial = async (fn) => {
     setError("");
     setBusy(true);
     try {
-      await fn();
-      navigate("/complete-profile");
+      const loggedInUser = await fn();
+      if (loggedInUser) navigate("/");
     } catch (err) {
       setError(traducirError(err.code));
     } finally {
@@ -60,6 +62,11 @@ export default function Register() {
 
           <Card className="swim-card p-3 p-sm-4">
             <Card.Body>
+              {redirectError && (
+                <Alert variant="danger" className="py-2 small" onClose={clearRedirectError} dismissible>
+                  {traducirError(redirectError)}
+                </Alert>
+              )}
               <div className="d-grid gap-2 mb-3">
                 <Button className="btn-swim-outline border" disabled={busy} onClick={() => handleSocial(loginWithGoogle)}>
                   Registrarme con Google
@@ -172,7 +179,13 @@ function traducirError(code) {
     "auth/email-already-in-use": "Ese correo ya está registrado.",
     "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
     "auth/invalid-email": "El correo no es válido.",
+    "auth/account-exists-with-different-credential":
+      "Ya existe una cuenta con ese correo usando otro método de acceso.",
+    "auth/unauthorized-domain": "Este dominio no está autorizado para el login social en Firebase.",
+    "auth/network-request-failed": "Fallo de conexión. Intenta de nuevo.",
     "auth/popup-closed-by-user": "Se cerró la ventana antes de completar el registro.",
+    "auth/popup-blocked": "El navegador bloqueó la ventana emergente. Permití popups para este sitio e intenta de nuevo.",
+    "auth/cancelled-popup-request": "Se canceló el intento anterior. Intenta de nuevo.",
   };
   return map[code] || "Ocurrió un error. Intenta de nuevo.";
 }

@@ -45,7 +45,7 @@ export default function TopMarks() {
       <Container fluid="lg" className="pb-5">
         {isProfesor && (
           <Form.Select
-            className="mb-3"
+            className="mb-3 swim-input"
             style={{ maxWidth: 320 }}
             value={athleteId}
             onChange={(e) => setAthleteId(e.target.value)}

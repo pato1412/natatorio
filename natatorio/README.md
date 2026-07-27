@@ -221,13 +221,13 @@ funcione realmente sin conexión (por ejemplo, cronometrar en una pileta
 sin señal y sincronizar después), se puede sumar la persistencia offline
 de Firestore — es un cambio aparte, avisame si te interesa.
 
-### Otra cosa a tener en cuenta: login social como app instalada
+### Login social como app instalada
 
-Algunos navegadores restringen las ventanas emergentes (`signInWithPopup`)
-cuando la app corre en modo standalone (instalada). Si notás que
-"Continuar con Google/Facebook" no abre bien la ventana una vez instalada,
-la solución es cambiar esos dos métodos a `signInWithRedirect` en
-`AuthContext.jsx` — es un cambio chico, avisame si te pasa y lo hacemos.
+El login con Google/Facebook usa `signInWithRedirect` (no ventanas
+emergentes), que es el método recomendado para apps instaladas: al tocar
+"Continuar con Google/Facebook" la página entera navega al proveedor y
+vuelve navegando de nuevo al sitio. Esto evita el problema de los
+navegadores que bloquean popups en modo standalone.
 
 ## Nota sobre Instagram
 
