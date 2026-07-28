@@ -56,8 +56,12 @@ export default function Register() {
       <Row className="w-100 justify-content-center">
         <Col xs={12} sm={10} md={8} lg={6} xl={5}>
           <div className="text-center mb-4">
-            <div className="font-mono text-swim-cyan small swim-eyebrow">CARRIL DE TIEMPOS</div>
-            <h1 className="fw-bold fs-3 mt-1">Crear cuenta</h1>
+            <img src="/logo-mark.png" alt="Aqua Metrics" height="72" style={{ objectFit: "contain" }} />
+            <div className="fw-bold fs-4 text-white mt-2">Aqua Metrics</div>
+            <div className="text-swim-muted small text-uppercase" style={{ letterSpacing: "0.1em" }}>
+              Medí tu rendimiento
+            </div>
+            <h1 className="fw-bold fs-3 mt-3">Crear cuenta</h1>
           </div>
 
           <Card className="swim-card p-3 p-sm-4">

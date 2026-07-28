@@ -1,9 +1,10 @@
-# Carril de Tiempos — App de cronometraje de natación
+# Aqua Metrics — Medí tu rendimiento
 
-App con registro/login (Google, Facebook o formulario propio), perfiles de
-Profesor y Atleta, cronómetro por estilo/distancia, rankings, mejores marcas
-e historial. Usa Firebase Authentication y Firestore, y **React-Bootstrap**
-para la interfaz (pensada mobile-first).
+App de cronometraje de natación con registro/login (Google, Facebook o
+formulario propio), perfiles de Profesor y Atleta, cronómetro por
+estilo/distancia, rankings, mejores marcas e historial. Usa Firebase
+Authentication y Firestore, y **React-Bootstrap** para la interfaz
+(pensada mobile-first).
 
 ## Secciones de la app
 
@@ -171,7 +172,22 @@ renombre, desactive o elimine un estilo, o cambie el nombre de un atleta.
 La app está configurada como Progressive Web App con `vite-plugin-pwa`:
 genera el `manifest.webmanifest`, el service worker, y ya incluye los
 íconos en `public/icons/` (192, 512, versiones "maskable" para Android, y
-`apple-touch-icon` para iOS).
+`apple-touch-icon` para iOS), generados a partir del logo de Aqua Metrics.
+
+También están en `public/`:
+- `logo-mark.png` — solo la marca (gota + nadador + velocímetro), con
+  fondo transparente. Es la que se usa en el menú y en las pantallas de
+  login/registro, porque funciona sobre cualquier fondo.
+- `logo-full.png` — el logo completo con el texto "AQUA METRICS" y el
+  tagline, recortado del arte original. **No se usa en la interfaz actual**
+  porque el texto está en azul marino oscuro y no se lee sobre el fondo
+  oscuro de la app; queda disponible como asset por si hace falta en algún
+  contexto con fondo claro (por ejemplo, un PDF exportado o un email).
+
+El archivo original en alta resolución (tal cual se subió, sin recortar)
+queda guardado en `design-assets/logo-original.png` — no se sirve en la
+app ni se cachea con el service worker, es solo para volver a generar
+íconos si hace falta más adelante.
 
 ### Probarla localmente
 
@@ -221,13 +237,29 @@ funcione realmente sin conexión (por ejemplo, cronometrar en una pileta
 sin señal y sincronizar después), se puede sumar la persistencia offline
 de Firestore — es un cambio aparte, avisame si te interesa.
 
-### Login social como app instalada
+### Login social: popup en navegador, redirect solo instalada
 
-El login con Google/Facebook usa `signInWithRedirect` (no ventanas
-emergentes), que es el método recomendado para apps instaladas: al tocar
-"Continuar con Google/Facebook" la página entera navega al proveedor y
-vuelve navegando de nuevo al sitio. Esto evita el problema de los
-navegadores que bloquean popups en modo standalone.
+El login con Google/Facebook usa `signInWithPopup` cuando la app corre en
+una pestaña normal del navegador, y `signInWithRedirect` únicamente cuando
+corre instalada (modo standalone).
+
+¿Por qué no redirect siempre? `signInWithRedirect` depende de que el
+navegador comparta almacenamiento entre tu dominio y el dominio de
+autenticación de Firebase (`*.firebaseapp.com`) durante la ida y vuelta a
+Google/Facebook. Varios navegadores modernos (Chrome, Safari) bloquean ese
+almacenamiento entre sitios por privacidad, lo que hace que el login
+falle **en silencio** (sin ningún error visible) en una pestaña normal: la
+persona da los permisos en Google, vuelve al sitio, y queda como si nunca
+hubiera iniciado sesión. El popup no tiene ese problema porque se
+comunica directo con la pestaña que lo abrió, sin depender de ese
+almacenamiento compartido — por eso es el método por defecto.
+
+Si en algún momento el login por redirect (modo instalado) da el mismo
+problema, la solución definitiva de Firebase es configurar un `authDomain`
+propio, en el mismo dominio que tu app (vía Firebase Hosting), en vez del
+`*.firebaseapp.com` por defecto — así todo el flujo queda en el mismo
+sitio y deja de depender de almacenamiento entre dominios. Más info:
+https://firebase.google.com/docs/auth/web/redirect-best-practices
 
 ## Nota sobre Instagram
 

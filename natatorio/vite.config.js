@@ -9,11 +9,17 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/favicon.png", "icons/favicon-16.png", "icons/apple-touch-icon.png"],
+      includeAssets: [
+        "icons/favicon.png",
+        "icons/favicon-16.png",
+        "icons/apple-touch-icon.png",
+        "logo-full.png",
+        "logo-mark.png",
+      ],
       manifest: {
-        name: "Carril de Tiempos",
-        short_name: "Carril",
-        description: "Cronometraje y seguimiento de tiempos de natación para profesores y atletas",
+        name: "Aqua Metrics",
+        short_name: "Aqua Metrics",
+        description: "Aqua Metrics — Medí tu rendimiento. Cronometraje y seguimiento de tiempos de natación para profesores y atletas",
         start_url: "/",
         scope: "/",
         id: "/",

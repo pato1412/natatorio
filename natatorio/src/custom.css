@@ -205,17 +205,29 @@ body {
   }
 }
 
-/* --- Menú de navegación --- */
-.swim-navbar .nav-link {
+/* --- Menú de navegación (Offcanvas lateral) --- */
+.swim-offcanvas {
+  --bs-offcanvas-width: min(300px, 85vw);
+  background-color: var(--swim-panel);
+  color: #e8f4f6;
+}
+.swim-offcanvas .offcanvas-header {
+  border-bottom: 1px solid var(--swim-border);
+}
+.swim-offcanvas .nav-link {
   color: var(--swim-muted);
   font-weight: 600;
-  font-size: 0.9rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 0.6rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
-.swim-navbar .nav-link.active {
+.swim-offcanvas .nav-link.active {
   color: var(--swim-cyan) !important;
+  background-color: var(--swim-panel-alt);
 }
-.swim-navbar .nav-link:hover {
+.swim-offcanvas .nav-link:hover {
   color: #e8f4f6;
+  background-color: var(--swim-panel-alt);
 }
 
 /* --- Pestañas de Configuración --- */
