@@ -18,6 +18,8 @@ import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useEstilos } from "../hooks/useEstilos";
 import { useDistancias } from "../hooks/useDistancias";
+import { useTorneos } from "../hooks/useTorneos";
+import { useInscriptos } from "../hooks/useInscriptos";
 import { formatTime } from "../theme";
 import PageHeader from "../components/PageHeader";
 import QuickActionBar from "../components/QuickActionBar";
@@ -56,14 +58,23 @@ export default function ProfesorDashboard() {
   const { user, profile } = useAuth();
   const { estilos, loading: loadingEstilos } = useEstilos();
   const { distancias, loading: loadingDistancias } = useDistancias();
+  const { torneos } = useTorneos({ onlyActive: true });
   const [athletes, setAthletes] = useState([]);
   const [athleteId, setAthleteId] = useState("");
   const [estiloId, setEstiloId] = useState("");
   const [distancia, setDistancia] = useState(null);
+  const [torneoId, setTorneoId] = useState(""); // "" = práctica (sin torneo)
+  const { inscriptos } = useInscriptos(torneoId || null);
   const [recent, setRecent] = useState([]);
   const [saved, setSaved] = useState(false);
   const [recordBanner, setRecordBanner] = useState(null);
   const sw = useStopwatch();
+
+  // Si hay un torneo seleccionado, solo se puede elegir entre los atletas
+  // inscriptos en ese torneo; en "Práctica" se puede elegir cualquiera.
+  const athletesForSelect = torneoId
+    ? athletes.filter((a) => inscriptos.some((i) => i.id === a.id))
+    : athletes;
 
   useEffect(() => {
     const q = query(collection(db, "users"), where("role", "==", "atleta"));
@@ -76,6 +87,16 @@ export default function ProfesorDashboard() {
   useEffect(() => {
     if (!athleteId && athletes.length) setAthleteId(athletes[0].id);
   }, [athletes]); // eslint-disable-line
+
+  // Si cambia el contexto (práctica/torneo) y el atleta elegido ya no está
+  // disponible en la nueva lista, se selecciona el primero que sí lo esté.
+  useEffect(() => {
+    if (athletesForSelect.length && !athletesForSelect.some((a) => a.id === athleteId)) {
+      setAthleteId(athletesForSelect[0].id);
+    } else if (athletesForSelect.length === 0) {
+      setAthleteId("");
+    }
+  }, [torneoId, inscriptos]); // eslint-disable-line
 
   useEffect(() => {
     if (!estiloId && estilos.length) setEstiloId(estilos[0].id);
@@ -100,6 +121,7 @@ export default function ProfesorDashboard() {
 
   const athlete = athletes.find((a) => a.id === athleteId);
   const estilo = estilos.find((e) => e.id === estiloId);
+  const torneo = torneos.find((t) => t.id === torneoId);
 
   const handleSave = async () => {
     if (!athleteId || !estiloId || !distancia || sw.elapsed === 0) return;
@@ -107,6 +129,8 @@ export default function ProfesorDashboard() {
 
     // Busca la mejor marca previa del atleta para este estilo/distancia,
     // para saber si el tiempo que se está por guardar es un nuevo récord.
+    // El récord se compara en general (sin importar si fue en práctica o
+    // en un torneo), porque es la mejor marca personal del atleta.
     let previousBestMs = null;
     try {
       const bestQ = query(
@@ -135,6 +159,8 @@ export default function ProfesorDashboard() {
       date: new Date().toISOString(),
       recordedBy: user.uid,
       isRecord: isNewRecord,
+      torneoId: torneoId || null,
+      torneoNombre: torneo?.nombre || null,
       createdAt: serverTimestamp(),
     });
 
@@ -189,10 +215,44 @@ export default function ProfesorDashboard() {
           <Col xs={12} lg={7}>
             <Card className="swim-card mb-3">
               <Card.Body>
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <Form.Label className="small text-swim-muted text-uppercase fw-bold m-0">Contexto</Form.Label>
+                  <Link to="/torneos" className="text-swim-cyan" style={{ fontSize: "0.75rem" }}>
+                    Torneos
+                  </Link>
+                </div>
+                <div className="d-flex flex-wrap gap-2">
+                  <Button
+                    className="rounded-pill swim-tap-chip"
+                    variant={torneoId === "" ? "info" : "outline-secondary"}
+                    onClick={() => setTorneoId("")}
+                  >
+                    Práctica
+                  </Button>
+                  {torneos.map((t) => (
+                    <Button
+                      key={t.id}
+                      className="rounded-pill swim-tap-chip"
+                      variant={torneoId === t.id ? "info" : "outline-secondary"}
+                      onClick={() => setTorneoId(t.id)}
+                    >
+                      {t.nombre}
+                    </Button>
+                  ))}
+                </div>
+              </Card.Body>
+            </Card>
+
+            <Card className="swim-card mb-3">
+              <Card.Body>
                 <Form.Label className="small text-swim-muted text-uppercase fw-bold">Participante</Form.Label>
                 <Form.Select value={athleteId} onChange={(e) => setAthleteId(e.target.value)}>
-                  {athletes.length === 0 && <option value="">Todavía no hay atletas registrados</option>}
-                  {athletes.map((a) => (
+                  {athletesForSelect.length === 0 && (
+                    <option value="">
+                      {torneoId ? "Nadie se inscribió a este torneo todavía" : "Todavía no hay atletas registrados"}
+                    </option>
+                  )}
+                  {athletesForSelect.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.fullName}
                     </option>
@@ -255,6 +315,7 @@ export default function ProfesorDashboard() {
               <div className="font-mono text-swim-muted small mb-1">
                 {athlete ? athlete.fullName.toUpperCase() : "SELECCIONA UN ATLETA"}
                 {estilo ? ` · ${estilo.label.toUpperCase()}` : ""}{distancia ? ` · ${distancia} M` : ""}
+                {" · "}{torneo ? torneo.nombre.toUpperCase() : "PRÁCTICA"}
               </div>
               <div className={`swim-timer-value ${sw.running ? "text-swim-cyan" : "text-white"}`}>
                 {formatTime(sw.elapsed)}
@@ -294,7 +355,7 @@ export default function ProfesorDashboard() {
                           <div className="small" style={{ minWidth: 0 }}>
                             <span className="fw-semibold">{a?.fullName || t.athleteName || "—"}</span>{" "}
                             <span className="text-swim-muted">
-                              · {t.estiloLabel || "—"} · {t.distancia} m
+                              · {t.estiloLabel || "—"} · {t.distancia} m · {t.torneoNombre || "Práctica"}
                             </span>
                             {t.isRecord && <span className="ms-1">🏆</span>}
                           </div>

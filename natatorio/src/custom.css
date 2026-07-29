@@ -206,6 +206,17 @@ body {
 }
 
 /* --- Menú de navegación (Offcanvas lateral) --- */
+
+/* En iPhone instalado (standalone), el status bar queda "flotando" sobre
+   el contenido en vez de empujarlo hacia abajo (por status-bar-style
+   "black-translucent" + viewport-fit=cover en index.html). Sin este
+   padding, la barra superior y el encabezado del menú quedan tapados por
+   el reloj/batería del sistema. env(safe-area-inset-top) es 0 en
+   Android/navegador normal, así que no afecta nada ahí. */
+.swim-navbar {
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+}
+
 .swim-offcanvas {
   --bs-offcanvas-width: min(300px, 85vw);
   background-color: var(--swim-panel);
@@ -213,6 +224,7 @@ body {
 }
 .swim-offcanvas .offcanvas-header {
   border-bottom: 1px solid var(--swim-border);
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
 }
 .swim-offcanvas .nav-link {
   color: var(--swim-muted);
@@ -244,4 +256,37 @@ body {
 }
 .swim-tabs .nav-link:hover {
   border-color: var(--swim-border);
+}
+
+/* --- Hoja de resultados: impresión --- */
+@media print {
+  .swim-navbar,
+  .swim-offcanvas,
+  .offcanvas-backdrop,
+  .swim-no-print {
+    display: none !important;
+  }
+  body,
+  .swim-results-block {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .swim-results-block {
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+  }
+  .swim-results-block .text-swim-cyan,
+  .swim-results-block .text-swim-muted,
+  .swim-table th,
+  .swim-table td {
+    color: #000000 !important;
+  }
+}
+
+/* --- Podio (1°, 2° y 3° puesto) en la hoja de resultados --- */
+.swim-podium-row td {
+  background-color: rgba(242, 183, 5, 0.08) !important;
+}
+.swim-podium-row:first-child td {
+  background-color: rgba(242, 183, 5, 0.14) !important;
 }

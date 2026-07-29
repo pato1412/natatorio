@@ -78,6 +78,9 @@ export default function AppNavbar() {
             <Nav.Link as={NavLink} to="/marcas" onClick={handleClose}>
               {isProfesor ? "Marcas por atleta" : "Mis mejores marcas"}
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/torneos" onClick={handleClose}>
+              Torneos
+            </Nav.Link>
             {!isProfesor && (
               <Nav.Link as={NavLink} to="/historial" onClick={handleClose}>
                 Mi historial

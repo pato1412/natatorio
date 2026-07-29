@@ -5,15 +5,25 @@ import { db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useEstilos } from "../hooks/useEstilos";
 import { useDistancias } from "../hooks/useDistancias";
+import { useTorneos } from "../hooks/useTorneos";
 import PageHeader from "../components/PageHeader";
 import TopList from "../components/TopList";
+
+// "" = general (todos los contextos), "practica" = solo práctica, o el id de un torneo puntual
+function resolveTorneoFilter(value) {
+  if (value === "") return undefined;
+  if (value === "practica") return null;
+  return value;
+}
 
 export default function TopMarks() {
   const { user, profile } = useAuth();
   const isProfesor = profile?.role === "profesor";
   const { estilos, loading: loadingEstilos } = useEstilos();
   const { distancias, loading: loadingDistancias } = useDistancias();
+  const { torneos } = useTorneos({ onlyActive: false });
   const [distancia, setDistancia] = useState(null);
+  const [contexto, setContexto] = useState("");
   const [athletes, setAthletes] = useState([]);
   const [athleteId, setAthleteId] = useState("");
 
@@ -35,6 +45,7 @@ export default function TopMarks() {
   }, [athletes, isProfesor]); // eslint-disable-line
 
   const targetAthleteId = isProfesor ? athleteId : user.uid;
+  const torneoFilter = resolveTorneoFilter(contexto);
 
   return (
     <div>
@@ -59,6 +70,21 @@ export default function TopMarks() {
           </Form.Select>
         )}
 
+        <Form.Select
+          className="mb-3 swim-input"
+          style={{ maxWidth: 320 }}
+          value={contexto}
+          onChange={(e) => setContexto(e.target.value)}
+        >
+          <option value="">General (prácticas y torneos)</option>
+          <option value="practica">Solo prácticas</option>
+          {torneos.map((t) => (
+            <option key={t.id} value={t.id}>
+              Torneo: {t.nombre}
+            </option>
+          ))}
+        </Form.Select>
+
         <div className="d-flex flex-wrap gap-2 mb-4">
           {loadingDistancias && <span className="small text-swim-muted">Cargando distancias…</span>}
           {distancias.map((d) => (
@@ -82,7 +108,13 @@ export default function TopMarks() {
               <Row className="g-3">
                 {estilos.map((e) => (
                   <Col xs={12} md={6} key={e.id}>
-                    <TopList estiloId={e.id} estiloLabel={e.label} distancia={distancia} athleteId={targetAthleteId} />
+                    <TopList
+                      estiloId={e.id}
+                      estiloLabel={e.label}
+                      distancia={distancia}
+                      athleteId={targetAthleteId}
+                      torneoFilter={torneoFilter}
+                    />
                   </Col>
                 ))}
               </Row>

@@ -8,30 +8,78 @@ Authentication y Firestore, y **React-Bootstrap** para la interfaz
 
 ## Secciones de la app
 
-Menú de navegación (arriba, colapsable en mobile):
+Menú de navegación (Offcanvas lateral izquierdo, con botón ☰ arriba):
 
 - **Inicio** (`/`) — Top 10 de cada estilo, entre TODOS los participantes.
-  Es la página de inicio para ambos roles.
-- **Marcas** (`/marcas`) — Top 10 de cada estilo:
+  Es la página de inicio para ambos roles. Se puede filtrar por contexto:
+  general (todo mezclado), solo prácticas, o un torneo puntual.
+- **Marcas** (`/marcas`) — Top 10 de cada estilo, con el mismo filtro de
+  contexto (general/práctica/torneo):
   - Atleta: sus propias 10 mejores marcas por estilo.
   - Profesor: elige un atleta y ve sus 10 mejores marcas por estilo.
+- **Torneos** (`/torneos`) — el profesor crea torneos (nombre, fecha,
+  descripción opcional) y puede marcarlos como finalizados; el atleta ve
+  los torneos activos y se inscribe o se da de baja. Cada torneo tiene su
+  hoja de resultados descargable/compartible. Ver más abajo.
 - **Registrar tiempos** (`/registrar`, solo profesor) — formulario +
   cronómetro, con una barra de acción fija abajo (Iniciar/Detener/Guardar)
-  para cronometrar rápido sin perder de vista la pantalla. Desde "Últimos
+  para cronometrar rápido sin perder de vista la pantalla. Antes de elegir
+  el participante, el profesor elige el **contexto**: "Práctica" o uno de
+  los torneos activos — si elige un torneo, el selector de participante se
+  filtra solo a los atletas inscriptos en ese torneo. Desde "Últimos
   registros" se puede eliminar un tiempo cargado por error (🗑). Si el
   tiempo guardado supera la mejor marca previa del atleta en ese
-  estilo/distancia, se marca como récord (🏆), se muestra un aviso
-  destacado al profesor, y se genera una notificación in-app para el
-  atleta.
+  estilo/distancia (sin importar el contexto), se marca como récord (🏆),
+  se muestra un aviso destacado al profesor, y se genera una notificación
+  in-app para el atleta.
 - **Mi historial** (`/historial`, solo atleta) — mejor marca por estilo y el
-  historial completo de tiempos.
+  historial completo de tiempos, incluyendo de qué torneo (o "Práctica")
+  es cada uno.
 - **Configuración** (`/configuracion`, solo profesor) — dos pestañas para
   administrar sin tocar código: **Estilos** y **Distancias**, disponibles en
-  el formulario de registro de tiempos (ver más abajo).
+  el formulario de registro de tiempos.
 
 Los atletas ven una campana 🔔 en el menú con las notificaciones de récord
 personal. Es una notificación **dentro de la app** (no un push del sistema
 operativo); para eso haría falta sumar Firebase Cloud Messaging.
+
+### Torneos
+
+Un torneo es simplemente una etiqueta con la que se agrupan tiempos:
+permite diferenciar "esto se nadó en tal torneo" de "esto fue una práctica
+normal". El flujo es:
+
+1. El profesor crea el torneo desde `/torneos` (nombre, fecha, descripción
+   opcional). Queda "Activo" por defecto.
+2. Los atletas entran a `/torneos` y tocan "Inscribirme" en los que les
+   interesen. Pueden darse de baja mientras el torneo siga activo.
+3. Al registrar tiempos, el profesor elige ese torneo como contexto, y el
+   selector de participante muestra solo a los inscriptos.
+4. El profesor puede marcar el torneo como "Finalizado" cuando termina —
+   deja de aparecer como opción para cargar tiempos nuevos, pero los
+   tiempos ya cargados y las estadísticas siguen intactos.
+
+Los tiempos guardan tanto el `torneoId` (o `null` si fue una práctica)
+como una copia del nombre del torneo al momento de guardarlo, así que si
+más adelante se edita o elimina el torneo, el historial no se rompe.
+
+### Hoja de resultados
+
+Desde cada torneo (link "Ver hoja de resultados" en su tarjeta, visible
+para profesor y atleta) se accede a `/torneos/:id/resultados`: todos los
+tiempos de ese torneo agrupados por estilo y distancia, ordenados de más
+rápido a más lento. Ahí hay tres acciones:
+
+- **Descargar PDF** — genera el PDF en el momento, en el propio navegador
+  (con `jsPDF` + `jspdf-autotable`), sin backend ni servicio externo.
+- **Compartir** — usa la Web Share API del navegador (el mismo selector
+  nativo que usa cualquier app del celular) para mandar el PDF directo por
+  WhatsApp, mail, etc. Si el navegador no la soporta (típicamente en
+  escritorio), descarga el PDF directamente como alternativa.
+- **Imprimir** — usa la función nativa de impresión del navegador; hay una
+  hoja de estilos aparte (`@media print` en `custom.css`) que oculta el
+  menú y los botones, y fuerza fondo blanco/texto negro para que no gaste
+  tinta imprimiendo el tema oscuro de la app.
 
 ## 1. Crear el proyecto en Firebase
 
@@ -80,6 +128,9 @@ Los índices compuestos que usa la app son:
 - `times`: `athleteId` + `date` (historial del atleta)
 - `times`: `estilo` + `distancia` + `timeMs` (ranking global)
 - `times`: `athleteId` + `estilo` + `distancia` + `timeMs` (marcas por atleta)
+- `times`: `torneoId` + `estilo` + `distancia` + `timeMs` (ranking filtrado por torneo/práctica)
+- `times`: `torneoId` + `athleteId` + `estilo` + `distancia` + `timeMs` (marcas filtradas por torneo/práctica)
+- `torneos`: `activo` + `fecha` (lista de torneos activos, ordenados)
 - `estilos`: `active` + `order` (lista de estilos activos, ordenada)
 - `distancias`: `active` + `value` (lista de distancias activas, ordenadas numéricamente)
 - `notifications`: `userId` + `createdAtIso` (campana de notificaciones del atleta)
@@ -141,9 +192,32 @@ campo de orden manual como en `estilos`.
   date: string (ISO),
   recordedBy: string,    // uid del profesor
   isRecord: boolean,     // true si fue un nuevo récord personal al guardarlo
+  torneoId: string | null,     // id del documento en "torneos", o null si fue una práctica
+  torneoNombre: string | null, // copia del nombre del torneo al momento de guardar (o null)
   createdAt: timestamp
 }
 ```
+
+**Colección `torneos`** (creada y administrada por un profesor):
+```
+{
+  nombre: string,
+  fecha: string (ISO date, ej. "2026-08-15"),
+  descripcion: string,   // opcional
+  activo: boolean,       // los finalizados no aparecen como opción al registrar tiempos nuevos
+  createdAt: timestamp
+}
+```
+
+**Subcolección `torneos/{torneoId}/inscripciones/{athleteId}`**:
+```
+{
+  athleteName: string,
+  inscribedAt: string (ISO)
+}
+```
+El id del documento es el uid del atleta, así que inscribirse/darse de
+baja es simplemente crear o borrar ese documento puntual.
 
 **Colección `notifications`**:
 ```

@@ -36,6 +36,35 @@
       ]
     },
     {
+      "collectionGroup": "times",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "torneoId", "order": "ASCENDING" },
+        { "fieldPath": "estilo", "order": "ASCENDING" },
+        { "fieldPath": "distancia", "order": "ASCENDING" },
+        { "fieldPath": "timeMs", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "times",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "torneoId", "order": "ASCENDING" },
+        { "fieldPath": "athleteId", "order": "ASCENDING" },
+        { "fieldPath": "estilo", "order": "ASCENDING" },
+        { "fieldPath": "distancia", "order": "ASCENDING" },
+        { "fieldPath": "timeMs", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "torneos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "activo", "order": "ASCENDING" },
+        { "fieldPath": "fecha", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "estilos",
       "queryScope": "COLLECTION",
       "fields": [

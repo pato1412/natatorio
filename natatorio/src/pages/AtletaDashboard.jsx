@@ -85,6 +85,7 @@ export default function AtletaDashboard() {
                       <th>ESTILO</th>
                       <th>DISTANCIA</th>
                       <th>TIEMPO</th>
+                      <th>CONTEXTO</th>
                       <th>FECHA</th>
                     </tr>
                   </thead>
@@ -94,6 +95,7 @@ export default function AtletaDashboard() {
                         <td>{t.estiloLabel || t.estilo}{t.isRecord && <span className="ms-1">🏆</span>}</td>
                         <td className="text-swim-muted">{t.distancia} m</td>
                         <td className="font-mono text-swim-cyan">{formatTime(t.timeMs)}</td>
+                        <td className="text-swim-muted">{t.torneoNombre || "Práctica"}</td>
                         <td className="text-swim-muted">{formatDate(t.date)}</td>
                       </tr>
                     ))}

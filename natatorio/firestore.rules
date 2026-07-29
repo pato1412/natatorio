@@ -33,6 +33,19 @@ service cloud.firestore {
       allow create, update, delete: if isProfesor();
     }
 
+    match /torneos/{torneoId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isProfesor();
+
+      match /inscripciones/{athleteId} {
+        allow read: if isSignedIn();
+        // el atleta se inscribe a sí mismo
+        allow create: if isSignedIn() && request.auth.uid == athleteId;
+        // el atleta se puede dar de baja, o el profesor puede darlo de baja
+        allow delete: if isSignedIn() && (request.auth.uid == athleteId || isProfesor());
+      }
+    }
+
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isProfesor();

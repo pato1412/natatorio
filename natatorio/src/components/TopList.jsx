@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { Card, ListGroup, Badge } from "react-bootstrap";
 import { db } from "../firebase";
-import { formatTime, formatDate } from "../theme";
-
-const MEDALLAS = ["🥇", "🥈", "🥉"];
+import { formatTime, formatDate, MEDALLAS } from "../theme";
 
 // Si se pasa athleteId, filtra el top 10 solo de ese atleta.
 // Si no, muestra el top 10 entre TODOS los participantes (y el nombre de cada uno).
-export default function TopList({ estiloId, estiloLabel, distancia, athleteId, showAthleteName }) {
+// torneoFilter: undefined = todos los contextos (general); null = solo práctica;
+// string = solo ese torneo puntual.
+export default function TopList({ estiloId, estiloLabel, distancia, athleteId, showAthleteName, torneoFilter }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,13 +16,14 @@ export default function TopList({ estiloId, estiloLabel, distancia, athleteId, s
     setLoading(true);
     const clauses = [where("estilo", "==", estiloId), where("distancia", "==", distancia)];
     if (athleteId) clauses.push(where("athleteId", "==", athleteId));
+    if (torneoFilter !== undefined) clauses.push(where("torneoId", "==", torneoFilter));
     const q = query(collection(db, "times"), ...clauses, orderBy("timeMs", "asc"), limit(10));
     const unsub = onSnapshot(q, (snap) => {
       setRows(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
     return unsub;
-  }, [estiloId, distancia, athleteId]);
+  }, [estiloId, distancia, athleteId, torneoFilter]);
 
   return (
     <Card className="swim-card h-100">
@@ -53,6 +54,11 @@ export default function TopList({ estiloId, estiloLabel, distancia, athleteId, s
                     <span className="small text-truncate">{t.athleteName || "—"}</span>
                   ) : (
                     <span className="small text-swim-muted">{formatDate(t.date)}</span>
+                  )}
+                  {torneoFilter === undefined && (
+                    <span className="text-swim-muted text-truncate" style={{ fontSize: "0.7rem" }}>
+                      · {t.torneoNombre || "Práctica"}
+                    </span>
                   )}
                 </div>
                 <span className="font-mono text-swim-cyan flex-shrink-0 ms-2">{formatTime(t.timeMs)}</span>

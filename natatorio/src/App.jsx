@@ -11,6 +11,8 @@ import TopMarks from "./pages/TopMarks";
 import ProfesorDashboard from "./pages/ProfesorDashboard";
 import AtletaDashboard from "./pages/AtletaDashboard";
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
+import Torneos from "./pages/Torneos";
+import ResultadosTorneo from "./pages/ResultadosTorneo";
 
 function LoadingScreen() {
   return (
@@ -70,6 +72,8 @@ export default function App() {
           >
             <Route path="/" element={<RankingsGlobal />} />
             <Route path="/marcas" element={<TopMarks />} />
+            <Route path="/torneos" element={<Torneos />} />
+            <Route path="/torneos/:torneoId/resultados" element={<ResultadosTorneo />} />
             <Route
               path="/historial"
               element={

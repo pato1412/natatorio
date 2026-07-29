@@ -18,7 +18,7 @@ export default function QuickActionBar({
 }) {
   return (
     <div
-      className="swim-quickbar"
+      className="swim-quickbar swim-no-print"
       style={{
         position: "fixed",
         left: 0,
