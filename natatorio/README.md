@@ -106,20 +106,20 @@ Flujo completo:
    un torneo).
 3. El profesor entra a "Gestionar equipos" y arma los equipos: crea cada
    equipo (nombre) y le agrega integrantes de la lista de inscriptos
-   (mínimo 2). El orden en que aparecen ahí es solo para organizarse — el
-   orden real en que nadan **se decide en el momento**, no queda fijo de
-   antemano.
-4. El atleta ve en su tarjeta de la posta a qué equipo quedó asignado.
+   (mínimo 2).
+4. **El orden en que va a nadar cada integrante** lo puede definir el
+   profesor desde "Gestionar equipos", o cada atleta desde su propia
+   tarjeta de la posta ("Ordenar mi equipo") — cualquiera de los dos con
+   las flechas ↑↓. Ese orden queda **fijo una vez que arranca la posta**.
 5. El profesor usa "Cronómetro" para tomar los tiempos: elige el equipo,
-   y por cada tramo elige **quién nada ese tramo** (cualquier integrante,
-   se puede repetir), toca "Iniciar tramo", y cuando ese nadador completa
-   la distancia toca "Marcar llegada" — ese tramo queda guardado y vuelve
-   a preguntar quién sigue. Así hasta que:
+   toca "Iniciar posta", y a partir de ahí solo tiene que tocar **"Siguiente
+   atleta"** cada vez que un integrante completa su tramo — el cronómetro
+   avanza solo, en el orden ya definido, dando otra vuelta a la lista si
+   hace falta. Así hasta que:
    - **Postas por distancia**: se corta sola al completar la cantidad de
      tramos necesaria para llegar al total.
    - **Postas por tiempo**: el profesor corta manualmente con "Finalizar
-     posta" cuando se cumple el tiempo objetivo (se muestra un contador en
-     vivo comparando contra el objetivo, a modo de referencia).
+     posta" cuando se cumple el tiempo objetivo.
 6. Al finalizar, el resultado del equipo (tiempo total o distancia total,
    según el tipo) queda guardado, y desde "Ver resultados" se accede a la
    hoja de resultados de la posta: clasificación general de los equipos
@@ -287,20 +287,39 @@ baja es simplemente crear o borrar ese documento puntual.
 en torneos — el atleta expresa interés en participar. El id del
 documento es el uid del atleta.
 
-**Subcolección `postas/{postaId}/equipos/{equipoId}`** (creada y
-administrada por un profesor):
+**Subcolección `postas/{postaId}/equipos/{equipoId}`** (creada por un
+profesor; el orden lo puede ajustar el profesor o cualquiera de sus
+integrantes):
 ```
 {
   nombre: string,
   integrantes: [
     { athleteId: string, athleteName: string, orden: number }
   ],
+  integranteIds: [string],  // mismos athleteId que integrantes, solo para las reglas de Firestore
   createdAt: timestamp
 }
 ```
-`integrantes` es un array simple (no una subcolección) porque lo edita
-por completo el profesor desde "Gestionar equipos"; `orden` es solo para
-mostrar la lista organizada, no define el orden real en que nadan.
+`integrantes` es un array simple (no una subcolección): el profesor es
+quien agrega/quita integrantes y puede crear o eliminar el equipo, pero
+tanto él como cualquier atleta que forme parte del equipo pueden
+reordenarlo (las flechas ↑↓) mientras la posta no haya arrancado — una vez
+que el profesor toca "Iniciar posta" en el cronómetro, ese orden es el que
+se usa y el cronómetro avanza solo con "Siguiente atleta".
+
+`integranteIds` es una copia plana de los `athleteId` (sin el resto de
+cada objeto) que existe solo para que las reglas de Firestore puedan
+comprobar rápido "¿este atleta es parte de este equipo?" sin tener que
+inspeccionar el array de objetos completo.
+
+> Nota sobre el alcance de esta regla: técnicamente un atleta con acceso
+> de "actualizar" su equipo podría, además de reordenarlo, modificar
+> `integrantes` de otras formas (la regla no valida que el cambio sea
+> *solo* de orden). Se optó por este nivel de confianza porque es
+> consistente con el resto de la app (por ejemplo, la auto-inscripción a
+> torneos/postas ya confía en el cliente); si más adelante hace falta un
+> control más estricto, se puede mover `integrantes` a una subcolección
+> con reglas por documento, similar a `inscripciones`.
 
 **Subcolección `postas/{postaId}/resultados/{resultadoId}`** (un
 documento por cada vez que un equipo corre la posta):

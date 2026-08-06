@@ -102,6 +102,11 @@ export default function PostaCard({ posta }) {
               Gestionar equipos →
             </Link>
           )}
+          {!isProfesor && miEquipo && (
+            <Link to={`/postas/${posta.id}/equipos`} className="text-swim-cyan small">
+              Ordenar mi equipo →
+            </Link>
+          )}
           {isProfesor && (
             <Link to={`/postas/${posta.id}/cronometro`} className="text-swim-cyan small">
               Cronómetro →

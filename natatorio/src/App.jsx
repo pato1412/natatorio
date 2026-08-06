@@ -80,14 +80,7 @@ export default function App() {
             <Route path="/torneos/:torneoId/resultados" element={<ResultadosTorneo />} />
             <Route path="/postas" element={<Postas />} />
             <Route path="/postas/:postaId/resultados" element={<ResultadosPosta />} />
-            <Route
-              path="/postas/:postaId/equipos"
-              element={
-                <ProfesorOnly>
-                  <EquiposPosta />
-                </ProfesorOnly>
-              }
-            />
+            <Route path="/postas/:postaId/equipos" element={<EquiposPosta />} />
             <Route
               path="/postas/:postaId/cronometro"
               element={

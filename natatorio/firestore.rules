@@ -58,7 +58,13 @@ service cloud.firestore {
 
       match /equipos/{equipoId} {
         allow read: if isSignedIn();
-        allow create, update, delete: if isProfesor();
+        allow create, delete: if isProfesor();
+        // El profesor puede editar todo (armar equipos, agregar/quitar
+        // integrantes). Un atleta que ya es integrante del equipo también
+        // puede actualizarlo, pensado para que pueda reordenar el orden de
+        // nado de su propio equipo antes de que arranque la posta.
+        allow update: if isProfesor() ||
+          (isSignedIn() && request.auth.uid in resource.data.integranteIds);
       }
 
       match /resultados/{resultadoId} {
