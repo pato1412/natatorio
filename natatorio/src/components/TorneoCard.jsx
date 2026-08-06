@@ -10,7 +10,7 @@ import { formatDate } from "../theme";
 export default function TorneoCard({ torneo }) {
   const { user, profile } = useAuth();
   const isProfesor = profile?.role === "profesor";
-  const { inscriptos, loading } = useInscriptos(torneo.id);
+  const { inscriptos, loading } = useInscriptos("torneos", torneo.id);
   const [busy, setBusy] = useState(false);
 
   const estoyInscripto = !isProfesor && inscriptos.some((i) => i.id === user.uid);

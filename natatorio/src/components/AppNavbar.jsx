@@ -30,10 +30,10 @@ export default function AppNavbar() {
         <Container fluid="lg" className="d-flex align-items-center gap-2">
           <Button
             variant="link"
-            className="p-0 border-0 text-white d-flex align-items-center"
+            className="p-0 border-0 text-white text-decoration-none d-flex align-items-center"
             onClick={handleShow}
             aria-label="Abrir menú"
-            style={{ fontSize: "1.5rem", lineHeight: 1, textDecoration: "none", color: "inherit" }}
+            style={{ fontSize: "1.5rem", lineHeight: 1 }}
           >
             ☰
           </Button>
@@ -80,6 +80,9 @@ export default function AppNavbar() {
             </Nav.Link>
             <Nav.Link as={NavLink} to="/torneos" onClick={handleClose}>
               Torneos
+            </Nav.Link>
+            <Nav.Link as={NavLink} to="/postas" onClick={handleClose}>
+              Postas
             </Nav.Link>
             {!isProfesor && (
               <Nav.Link as={NavLink} to="/historial" onClick={handleClose}>

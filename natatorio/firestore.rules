@@ -46,6 +46,28 @@ service cloud.firestore {
       }
     }
 
+    match /postas/{postaId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isProfesor();
+
+      match /inscripciones/{athleteId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.auth.uid == athleteId;
+        allow delete: if isSignedIn() && (request.auth.uid == athleteId || isProfesor());
+      }
+
+      match /equipos/{equipoId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isProfesor();
+      }
+
+      match /resultados/{resultadoId} {
+        allow read: if isSignedIn();
+        allow create: if isProfesor();
+        allow update, delete: if isSignedIn() && resource.data.recordedBy == request.auth.uid;
+      }
+    }
+
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isProfesor();

@@ -65,6 +65,14 @@
       ]
     },
     {
+      "collectionGroup": "postas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "activo", "order": "ASCENDING" },
+        { "fieldPath": "fecha", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "estilos",
       "queryScope": "COLLECTION",
       "fields": [

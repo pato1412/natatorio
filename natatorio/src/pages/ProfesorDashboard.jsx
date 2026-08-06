@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   collection,
@@ -20,39 +20,10 @@ import { useEstilos } from "../hooks/useEstilos";
 import { useDistancias } from "../hooks/useDistancias";
 import { useTorneos } from "../hooks/useTorneos";
 import { useInscriptos } from "../hooks/useInscriptos";
+import { useStopwatch } from "../hooks/useStopwatch";
 import { formatTime } from "../theme";
 import PageHeader from "../components/PageHeader";
 import QuickActionBar from "../components/QuickActionBar";
-
-function useStopwatch() {
-  const [elapsed, setElapsed] = useState(0);
-  const [running, setRunning] = useState(false);
-  const startRef = useRef(null);
-  const rafRef = useRef(null);
-
-  const tick = useCallback(() => {
-    setElapsed(Date.now() - startRef.current);
-    rafRef.current = requestAnimationFrame(tick);
-  }, []);
-
-  const start = () => {
-    if (running) return;
-    startRef.current = Date.now() - elapsed;
-    setRunning(true);
-    rafRef.current = requestAnimationFrame(tick);
-  };
-  const stop = () => {
-    setRunning(false);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-  };
-  const reset = () => {
-    setRunning(false);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    setElapsed(0);
-  };
-  useEffect(() => () => rafRef.current && cancelAnimationFrame(rafRef.current), []);
-  return { elapsed, running, start, stop, reset };
-}
 
 export default function ProfesorDashboard() {
   const { user, profile } = useAuth();

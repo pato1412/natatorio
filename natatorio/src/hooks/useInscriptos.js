@@ -2,25 +2,26 @@ import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 
-// Se suscribe a la subcolección de inscriptos de un torneo puntual.
-// Devuelve [] mientras torneoId sea null/"" (no hay torneo seleccionado).
-export function useInscriptos(torneoId) {
+// Se suscribe a la subcolección de inscriptos de un torneo o una posta
+// puntual (comparten exactamente el mismo patrón: "inscripciones" con id =
+// uid del atleta). Devuelve [] mientras docId sea null/"" (nada seleccionado).
+export function useInscriptos(coleccion, docId) {
   const [inscriptos, setInscriptos] = useState([]);
-  const [loading, setLoading] = useState(!!torneoId);
+  const [loading, setLoading] = useState(!!docId);
 
   useEffect(() => {
-    if (!torneoId) {
+    if (!docId) {
       setInscriptos([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    const unsub = onSnapshot(collection(db, "torneos", torneoId, "inscripciones"), (snap) => {
+    const unsub = onSnapshot(collection(db, coleccion, docId, "inscripciones"), (snap) => {
       setInscriptos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
     return unsub;
-  }, [torneoId]);
+  }, [coleccion, docId]);
 
   return { inscriptos, loading };
 }

@@ -13,6 +13,10 @@ import AtletaDashboard from "./pages/AtletaDashboard";
 import ConfiguracionAdmin from "./pages/ConfiguracionAdmin";
 import Torneos from "./pages/Torneos";
 import ResultadosTorneo from "./pages/ResultadosTorneo";
+import Postas from "./pages/Postas";
+import EquiposPosta from "./pages/EquiposPosta";
+import CronometroPosta from "./pages/CronometroPosta";
+import ResultadosPosta from "./pages/ResultadosPosta";
 
 function LoadingScreen() {
   return (
@@ -74,6 +78,24 @@ export default function App() {
             <Route path="/marcas" element={<TopMarks />} />
             <Route path="/torneos" element={<Torneos />} />
             <Route path="/torneos/:torneoId/resultados" element={<ResultadosTorneo />} />
+            <Route path="/postas" element={<Postas />} />
+            <Route path="/postas/:postaId/resultados" element={<ResultadosPosta />} />
+            <Route
+              path="/postas/:postaId/equipos"
+              element={
+                <ProfesorOnly>
+                  <EquiposPosta />
+                </ProfesorOnly>
+              }
+            />
+            <Route
+              path="/postas/:postaId/cronometro"
+              element={
+                <ProfesorOnly>
+                  <CronometroPosta />
+                </ProfesorOnly>
+              }
+            />
             <Route
               path="/historial"
               element={

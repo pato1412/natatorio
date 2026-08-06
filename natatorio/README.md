@@ -21,6 +21,11 @@ Menú de navegación (Offcanvas lateral izquierdo, con botón ☰ arriba):
   descripción opcional) y puede marcarlos como finalizados; el atleta ve
   los torneos activos y se inscribe o se da de baja. Cada torneo tiene su
   hoja de resultados descargable/compartible. Ver más abajo.
+- **Postas** (`/postas`) — competencias por equipos (relevos). El profesor
+  crea la posta, arma los equipos y usa un cronómetro dedicado para tomar
+  los tiempos tramo por tramo. El atleta se inscribe y el profesor lo
+  asigna a un equipo. Cada posta tiene su propia hoja de resultados. Ver
+  más abajo.
 - **Registrar tiempos** (`/registrar`, solo profesor) — formulario +
   cronómetro, con una barra de acción fija abajo (Iniciar/Detener/Guardar)
   para cronometrar rápido sin perder de vista la pantalla. Antes de elegir
@@ -80,6 +85,51 @@ rápido a más lento. Ahí hay tres acciones:
   hoja de estilos aparte (`@media print` en `custom.css`) que oculta el
   menú y los botones, y fuerza fondo blanco/texto negro para que no gaste
   tinta imprimiendo el tema oscuro de la app.
+
+### Postas
+
+Una posta es una competencia por equipos: cada equipo nada la distancia
+total en tramos, turnándose entre sus integrantes. Tiene dos parámetros:
+
+- **Distancia por tramo** — cuánto nada cada integrante por turno (ej. 50 m).
+- **Largo total**, que puede ser de dos tipos:
+  - **Por distancia** (ej. 500 m): gana el equipo que complete esa
+    distancia en **menos tiempo**.
+  - **Por tiempo** (ej. 20 min): gana el equipo que recorra **más
+    distancia** dentro de ese tiempo.
+
+Flujo completo:
+
+1. El profesor crea la posta desde `/postas` (nombre, fecha, distancia por
+   tramo, tipo y valor del largo total, descripción opcional).
+2. Los atletas se inscriben tocando "Inscribirme" en la posta (igual que en
+   un torneo).
+3. El profesor entra a "Gestionar equipos" y arma los equipos: crea cada
+   equipo (nombre) y le agrega integrantes de la lista de inscriptos
+   (mínimo 2). El orden en que aparecen ahí es solo para organizarse — el
+   orden real en que nadan **se decide en el momento**, no queda fijo de
+   antemano.
+4. El atleta ve en su tarjeta de la posta a qué equipo quedó asignado.
+5. El profesor usa "Cronómetro" para tomar los tiempos: elige el equipo,
+   y por cada tramo elige **quién nada ese tramo** (cualquier integrante,
+   se puede repetir), toca "Iniciar tramo", y cuando ese nadador completa
+   la distancia toca "Marcar llegada" — ese tramo queda guardado y vuelve
+   a preguntar quién sigue. Así hasta que:
+   - **Postas por distancia**: se corta sola al completar la cantidad de
+     tramos necesaria para llegar al total.
+   - **Postas por tiempo**: el profesor corta manualmente con "Finalizar
+     posta" cuando se cumple el tiempo objetivo (se muestra un contador en
+     vivo comparando contra el objetivo, a modo de referencia).
+6. Al finalizar, el resultado del equipo (tiempo total o distancia total,
+   según el tipo) queda guardado, y desde "Ver resultados" se accede a la
+   hoja de resultados de la posta: clasificación general de los equipos
+   (con podio 🥇🥈🥉) y el detalle tramo por tramo de cada uno — con las
+   mismas opciones de **Descargar PDF**, **Compartir** e **Imprimir** que
+   los torneos.
+
+Un equipo puede correr la posta más de una vez (por ejemplo, para
+practicar y volver a intentarlo); el ranking usa siempre su mejor
+resultado.
 
 ## 1. Crear el proyecto en Firebase
 
@@ -218,6 +268,62 @@ campo de orden manual como en `estilos`.
 ```
 El id del documento es el uid del atleta, así que inscribirse/darse de
 baja es simplemente crear o borrar ese documento puntual.
+
+**Colección `postas`** (creada y administrada por un profesor):
+```
+{
+  nombre: string,
+  fecha: string (ISO date),
+  distanciaTramo: number,    // metros que nada cada integrante por turno
+  tipoLargo: "distancia" | "tiempo",
+  valorLargo: number,        // metros totales (si "distancia") o minutos (si "tiempo")
+  descripcion: string,       // opcional
+  activo: boolean,
+  createdAt: timestamp
+}
+```
+
+**Subcolección `postas/{postaId}/inscripciones/{athleteId}`**: igual que
+en torneos — el atleta expresa interés en participar. El id del
+documento es el uid del atleta.
+
+**Subcolección `postas/{postaId}/equipos/{equipoId}`** (creada y
+administrada por un profesor):
+```
+{
+  nombre: string,
+  integrantes: [
+    { athleteId: string, athleteName: string, orden: number }
+  ],
+  createdAt: timestamp
+}
+```
+`integrantes` es un array simple (no una subcolección) porque lo edita
+por completo el profesor desde "Gestionar equipos"; `orden` es solo para
+mostrar la lista organizada, no define el orden real en que nadan.
+
+**Subcolección `postas/{postaId}/resultados/{resultadoId}`** (un
+documento por cada vez que un equipo corre la posta):
+```
+{
+  equipoId: string,
+  equipoNombre: string,       // copia del nombre al momento de guardar
+  tramos: [
+    { orden: number, athleteId: string, athleteName: string, tiempoMs: number, acumuladoMs: number }
+  ],
+  totalTimeMs: number,        // tiempo total (suma de los tramos)
+  totalDistancia: number,     // tramos.length × distanciaTramo
+  distanciaTramo: number,     // copia de la posta al momento de guardar
+  tipoLargo: string,          // copia de la posta al momento de guardar
+  valorLargo: number,         // copia de la posta al momento de guardar
+  recordedBy: string,         // uid del profesor
+  date: string (ISO),
+  createdAt: timestamp
+}
+```
+El ranking de la hoja de resultados usa `totalTimeMs` (menor gana) para
+postas por distancia, o `totalDistancia` (mayor gana) para postas por
+tiempo — ver `tipoLargo`.
 
 **Colección `notifications`**:
 ```
